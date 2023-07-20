@@ -15,7 +15,7 @@ def convert_box_xywh_to_xyxy(box):
         result = []
         for b in box:
             b = convert_box_xywh_to_xyxy(b)
-            result.append(b)               
+            result.append(b)
     return result
 
 
@@ -96,14 +96,15 @@ def fast_process(
     annotations, args, mask_random_color, bbox=None, points=None, edges=False
 ):
     if isinstance(annotations[0], dict):
-        annotations = [annotation["segmentation"] for annotation in annotations]
+        annotations = [annotation["segmentation"]
+                       for annotation in annotations]
     result_name = os.path.basename(args.img_path)
     image = cv2.imread(args.img_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     original_h = image.shape[0]
     original_w = image.shape[1]
     if sys.platform == "darwin":
-            plt.switch_backend("TkAgg")
+        plt.switch_backend("TkAgg")
     plt.figure(figsize=(original_w/100, original_h/100))
     # Add subplot with no margin.
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
@@ -116,10 +117,12 @@ def fast_process(
             annotations = np.array(annotations.cpu())
         for i, mask in enumerate(annotations):
             mask = cv2.morphologyEx(
-                mask.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8)
+                mask.astype(np.uint8), cv2.MORPH_CLOSE, np.ones(
+                    (3, 3), np.uint8)
             )
             annotations[i] = cv2.morphologyEx(
-                mask.astype(np.uint8), cv2.MORPH_OPEN, np.ones((8, 8), np.uint8)
+                mask.astype(np.uint8), cv2.MORPH_OPEN, np.ones(
+                    (8, 8), np.uint8)
             )
     if args.device == "cpu":
         annotations = np.array(annotations)
@@ -179,16 +182,19 @@ def fast_process(
     plt.axis("off")
     fig = plt.gcf()
     plt.draw()
-    
+
     try:
         buf = fig.canvas.tostring_rgb()
     except AttributeError:
         fig.canvas.draw()
         buf = fig.canvas.tostring_rgb()
-    
+
     cols, rows = fig.canvas.get_width_height()
     img_array = np.fromstring(buf, dtype=np.uint8).reshape(rows, cols, 3)
-    cv2.imwrite(os.path.join(save_path, result_name), cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(os.path.join(save_path, result_name),
+                cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR))
+    cv2.imshow("result", cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR))
+    plt.close()
 
 
 # CPU post process
@@ -239,14 +245,18 @@ def fast_show_mask(
     # draw point
     if points is not None:
         plt.scatter(
-            [point[0] for i, point in enumerate(points) if point_label[i] == 1],
-            [point[1] for i, point in enumerate(points) if point_label[i] == 1],
+            [point[0] for i, point in enumerate(
+                points) if point_label[i] == 1],
+            [point[1] for i, point in enumerate(
+                points) if point_label[i] == 1],
             s=20,
             c="y",
         )
         plt.scatter(
-            [point[0] for i, point in enumerate(points) if point_label[i] == 0],
-            [point[1] for i, point in enumerate(points) if point_label[i] == 0],
+            [point[0] for i, point in enumerate(
+                points) if point_label[i] == 0],
+            [point[1] for i, point in enumerate(
+                points) if point_label[i] == 0],
             s=20,
             c="m",
         )
@@ -305,20 +315,25 @@ def fast_show_mask_gpu(
     # draw point
     if points is not None:
         plt.scatter(
-            [point[0] for i, point in enumerate(points) if point_label[i] == 1],
-            [point[1] for i, point in enumerate(points) if point_label[i] == 1],
+            [point[0] for i, point in enumerate(
+                points) if point_label[i] == 1],
+            [point[1] for i, point in enumerate(
+                points) if point_label[i] == 1],
             s=20,
             c="y",
         )
         plt.scatter(
-            [point[0] for i, point in enumerate(points) if point_label[i] == 0],
-            [point[1] for i, point in enumerate(points) if point_label[i] == 0],
+            [point[0] for i, point in enumerate(
+                points) if point_label[i] == 0],
+            [point[1] for i, point in enumerate(
+                points) if point_label[i] == 0],
             s=20,
             c="m",
         )
     if retinamask == False:
         show_cpu = cv2.resize(
-            show_cpu, (target_width, target_height), interpolation=cv2.INTER_NEAREST
+            show_cpu, (target_width,
+                       target_height), interpolation=cv2.INTER_NEAREST
         )
     ax.imshow(show_cpu)
 
@@ -381,7 +396,8 @@ def box_prompt(masks, bbox, target_height, target_width):
     # IoUs = torch.zeros(len(masks), dtype=torch.float32)
     bbox_area = (bbox[3] - bbox[1]) * (bbox[2] - bbox[0])
 
-    masks_area = torch.sum(masks[:, bbox[1] : bbox[3], bbox[0] : bbox[2]], dim=(1, 2))
+    masks_area = torch.sum(
+        masks[:, bbox[1]: bbox[3], bbox[0]: bbox[2]], dim=(1, 2))
     orig_masks_area = torch.sum(masks, dim=(1, 2))
 
     union = bbox_area + orig_masks_area - masks_area
@@ -396,7 +412,8 @@ def point_prompt(masks, points, point_label, target_height, target_width):  # nu
     w = masks[0]["segmentation"].shape[1]
     if h != target_height or w != target_width:
         points = [
-            [int(point[0] * w / target_width), int(point[1] * h / target_height)]
+            [int(point[0] * w / target_width),
+             int(point[1] * h / target_height)]
             for point in points
         ]
     onemask = np.zeros((h, w))
@@ -431,7 +448,8 @@ def text_prompt(annotations, text, img_path, device, wider=False, threshold=0.9)
     if wider:
         mask0 = annotations_[max_idx]["segmentation"]
         area0 = np.sum(mask0)
-        areas = [(i, np.sum(mask["segmentation"])) for i, mask in enumerate(annotations_) if i in origin_id]
+        areas = [(i, np.sum(mask["segmentation"]))
+                 for i, mask in enumerate(annotations_) if i in origin_id]
         areas = sorted(areas, key=lambda area: area[1], reverse=True)
         indices = [area[0] for area in areas]
         for index in indices:
